@@ -5,361 +5,1900 @@
  * School website API
  * OpenAPI spec version: 0.1.0
  */
-import * as zod from "zod";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import type {
+  MutationFunction,
+  QueryFunction,
+  QueryKey,
+  UseMutationOptions,
+  UseMutationResult,
+  UseQueryOptions,
+  UseQueryResult,
+} from "@tanstack/react-query";
+
+import type {
+  AboutContent,
+  AboutContentInput,
+  Activity,
+  ActivityInput,
+  CategoryCount,
+  HealthStatus,
+  ListResourcesParams,
+  MeInfo,
+  NewspaperArticle,
+  NewspaperArticleInput,
+  RecentItem,
+  Resource,
+  ResourceInput,
+  SiteStats,
+} from "./api.schemas";
+
+import { customFetch } from "../custom-fetch";
+import type { ErrorType, BodyType } from "../custom-fetch";
+
+type AwaitedInput<T> = PromiseLike<T> | T;
+
+type Awaited<O> = O extends AwaitedInput<infer T> ? T : never;
+
+type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
 
 /**
  * @summary Health check
  */
-export const HealthCheckResponse = zod.object({
-  status: zod.string(),
-});
+export const getHealthCheckUrl = () => {
+  return `/api/healthz`;
+};
+
+export const healthCheck = async (
+  options?: RequestInit,
+): Promise<HealthStatus> => {
+  return customFetch<HealthStatus>(getHealthCheckUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getHealthCheckQueryKey = () => {
+  return [`/api/healthz`] as const;
+};
+
+export const getHealthCheckQueryOptions = <
+  TData = Awaited<ReturnType<typeof healthCheck>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof healthCheck>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getHealthCheckQueryKey();
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof healthCheck>>> = ({
+    signal,
+  }) => healthCheck({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof healthCheck>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type HealthCheckQueryResult = NonNullable<
+  Awaited<ReturnType<typeof healthCheck>>
+>;
+export type HealthCheckQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Health check
+ */
+
+export function useHealthCheck<
+  TData = Awaited<ReturnType<typeof healthCheck>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof healthCheck>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getHealthCheckQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
 
 /**
  * @summary Get current user info and role
  */
-export const GetMeResponse = zod.object({
-  userId: zod.string(),
-  role: zod.enum(["admin", "user"]),
-  firstName: zod.string().nullish(),
-  lastName: zod.string().nullish(),
-  imageUrl: zod.string().nullish(),
-});
+export const getGetMeUrl = () => {
+  return `/api/me`;
+};
+
+export const getMe = async (options?: RequestInit): Promise<MeInfo> => {
+  return customFetch<MeInfo>(getGetMeUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetMeQueryKey = () => {
+  return [`/api/me`] as const;
+};
+
+export const getGetMeQueryOptions = <
+  TData = Awaited<ReturnType<typeof getMe>>,
+  TError = ErrorType<void>,
+>(options?: {
+  query?: UseQueryOptions<Awaited<ReturnType<typeof getMe>>, TError, TData>;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetMeQueryKey();
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getMe>>> = ({
+    signal,
+  }) => getMe({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getMe>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetMeQueryResult = NonNullable<Awaited<ReturnType<typeof getMe>>>;
+export type GetMeQueryError = ErrorType<void>;
+
+/**
+ * @summary Get current user info and role
+ */
+
+export function useGetMe<
+  TData = Awaited<ReturnType<typeof getMe>>,
+  TError = ErrorType<void>,
+>(options?: {
+  query?: UseQueryOptions<Awaited<ReturnType<typeof getMe>>, TError, TData>;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetMeQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
 
 /**
  * @summary Get website summary stats
  */
-export const GetStatsResponse = zod.object({
-  resourceCount: zod.number(),
-  articleCount: zod.number(),
-  activityCount: zod.number(),
-  upcomingActivityCount: zod.number(),
-});
+export const getGetStatsUrl = () => {
+  return `/api/stats`;
+};
+
+export const getStats = async (options?: RequestInit): Promise<SiteStats> => {
+  return customFetch<SiteStats>(getGetStatsUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetStatsQueryKey = () => {
+  return [`/api/stats`] as const;
+};
+
+export const getGetStatsQueryOptions = <
+  TData = Awaited<ReturnType<typeof getStats>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<Awaited<ReturnType<typeof getStats>>, TError, TData>;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetStatsQueryKey();
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getStats>>> = ({
+    signal,
+  }) => getStats({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getStats>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetStatsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getStats>>
+>;
+export type GetStatsQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Get website summary stats
+ */
+
+export function useGetStats<
+  TData = Awaited<ReturnType<typeof getStats>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<Awaited<ReturnType<typeof getStats>>, TError, TData>;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetStatsQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
 
 /**
  * @summary Get the most recent items across the site
  */
-export const GetRecentActivityResponseItem = zod.object({
-  id: zod.number(),
-  kind: zod.enum(["resource", "article", "activity"]),
-  title: zod.string(),
-  createdAt: zod.coerce.date(),
-});
-export const GetRecentActivityResponse = zod.array(
-  GetRecentActivityResponseItem,
-);
+export const getGetRecentActivityUrl = () => {
+  return `/api/recent-activity`;
+};
+
+export const getRecentActivity = async (
+  options?: RequestInit,
+): Promise<RecentItem[]> => {
+  return customFetch<RecentItem[]>(getGetRecentActivityUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetRecentActivityQueryKey = () => {
+  return [`/api/recent-activity`] as const;
+};
+
+export const getGetRecentActivityQueryOptions = <
+  TData = Awaited<ReturnType<typeof getRecentActivity>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getRecentActivity>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetRecentActivityQueryKey();
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof getRecentActivity>>
+  > = ({ signal }) => getRecentActivity({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getRecentActivity>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetRecentActivityQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getRecentActivity>>
+>;
+export type GetRecentActivityQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Get the most recent items across the site
+ */
+
+export function useGetRecentActivity<
+  TData = Awaited<ReturnType<typeof getRecentActivity>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getRecentActivity>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetRecentActivityQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
 
 /**
  * @summary List all educational resources
  */
-export const ListResourcesQueryParams = zod.object({
-  category: zod.coerce.string().optional(),
-});
+export const getListResourcesUrl = (params?: ListResourcesParams) => {
+  const normalizedParams = new URLSearchParams();
 
-export const ListResourcesResponseItem = zod.object({
-  id: zod.number(),
-  title: zod.string(),
-  description: zod.string(),
-  category: zod.string(),
-  url: zod.string().nullish(),
-  imageUrl: zod.string().nullish(),
-  createdAt: zod.coerce.date(),
-});
-export const ListResourcesResponse = zod.array(ListResourcesResponseItem);
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/resources?${stringifiedParams}`
+    : `/api/resources`;
+};
+
+export const listResources = async (
+  params?: ListResourcesParams,
+  options?: RequestInit,
+): Promise<Resource[]> => {
+  return customFetch<Resource[]>(getListResourcesUrl(params), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getListResourcesQueryKey = (params?: ListResourcesParams) => {
+  return [`/api/resources`, ...(params ? [params] : [])] as const;
+};
+
+export const getListResourcesQueryOptions = <
+  TData = Awaited<ReturnType<typeof listResources>>,
+  TError = ErrorType<unknown>,
+>(
+  params?: ListResourcesParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof listResources>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getListResourcesQueryKey(params);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof listResources>>> = ({
+    signal,
+  }) => listResources(params, { signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof listResources>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ListResourcesQueryResult = NonNullable<
+  Awaited<ReturnType<typeof listResources>>
+>;
+export type ListResourcesQueryError = ErrorType<unknown>;
+
+/**
+ * @summary List all educational resources
+ */
+
+export function useListResources<
+  TData = Awaited<ReturnType<typeof listResources>>,
+  TError = ErrorType<unknown>,
+>(
+  params?: ListResourcesParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof listResources>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListResourcesQueryOptions(params, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
 
 /**
  * @summary Create a new resource (admin only)
  */
+export const getCreateResourceUrl = () => {
+  return `/api/resources`;
+};
 
-export const CreateResourceBody = zod.object({
-  title: zod.string().min(1),
-  description: zod.string().min(1),
-  category: zod.string().min(1),
-  url: zod.string().nullish(),
-  imageUrl: zod.string().nullish(),
-});
+export const createResource = async (
+  resourceInput: ResourceInput,
+  options?: RequestInit,
+): Promise<Resource> => {
+  return customFetch<Resource>(getCreateResourceUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(resourceInput),
+  });
+};
+
+export const getCreateResourceMutationOptions = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createResource>>,
+    TError,
+    { data: BodyType<ResourceInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof createResource>>,
+  TError,
+  { data: BodyType<ResourceInput> },
+  TContext
+> => {
+  const mutationKey = ["createResource"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof createResource>>,
+    { data: BodyType<ResourceInput> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return createResource(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type CreateResourceMutationResult = NonNullable<
+  Awaited<ReturnType<typeof createResource>>
+>;
+export type CreateResourceMutationBody = BodyType<ResourceInput>;
+export type CreateResourceMutationError = ErrorType<void>;
+
+/**
+ * @summary Create a new resource (admin only)
+ */
+export const useCreateResource = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createResource>>,
+    TError,
+    { data: BodyType<ResourceInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof createResource>>,
+  TError,
+  { data: BodyType<ResourceInput> },
+  TContext
+> => {
+  return useMutation(getCreateResourceMutationOptions(options));
+};
 
 /**
  * @summary List distinct resource categories with counts
  */
-export const ListResourceCategoriesResponseItem = zod.object({
-  category: zod.string(),
-  count: zod.number(),
-});
-export const ListResourceCategoriesResponse = zod.array(
-  ListResourceCategoriesResponseItem,
-);
+export const getListResourceCategoriesUrl = () => {
+  return `/api/resources/categories`;
+};
+
+export const listResourceCategories = async (
+  options?: RequestInit,
+): Promise<CategoryCount[]> => {
+  return customFetch<CategoryCount[]>(getListResourceCategoriesUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getListResourceCategoriesQueryKey = () => {
+  return [`/api/resources/categories`] as const;
+};
+
+export const getListResourceCategoriesQueryOptions = <
+  TData = Awaited<ReturnType<typeof listResourceCategories>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listResourceCategories>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getListResourceCategoriesQueryKey();
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof listResourceCategories>>
+  > = ({ signal }) => listResourceCategories({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof listResourceCategories>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ListResourceCategoriesQueryResult = NonNullable<
+  Awaited<ReturnType<typeof listResourceCategories>>
+>;
+export type ListResourceCategoriesQueryError = ErrorType<unknown>;
+
+/**
+ * @summary List distinct resource categories with counts
+ */
+
+export function useListResourceCategories<
+  TData = Awaited<ReturnType<typeof listResourceCategories>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listResourceCategories>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListResourceCategoriesQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
 
 /**
  * @summary Get a single resource
  */
-export const GetResourceParams = zod.object({
-  id: zod.coerce.number(),
-});
+export const getGetResourceUrl = (id: number) => {
+  return `/api/resources/${id}`;
+};
 
-export const GetResourceResponse = zod.object({
-  id: zod.number(),
-  title: zod.string(),
-  description: zod.string(),
-  category: zod.string(),
-  url: zod.string().nullish(),
-  imageUrl: zod.string().nullish(),
-  createdAt: zod.coerce.date(),
-});
+export const getResource = async (
+  id: number,
+  options?: RequestInit,
+): Promise<Resource> => {
+  return customFetch<Resource>(getGetResourceUrl(id), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetResourceQueryKey = (id: number) => {
+  return [`/api/resources/${id}`] as const;
+};
+
+export const getGetResourceQueryOptions = <
+  TData = Awaited<ReturnType<typeof getResource>>,
+  TError = ErrorType<void>,
+>(
+  id: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getResource>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetResourceQueryKey(id);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getResource>>> = ({
+    signal,
+  }) => getResource(id, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!id,
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof getResource>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetResourceQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getResource>>
+>;
+export type GetResourceQueryError = ErrorType<void>;
+
+/**
+ * @summary Get a single resource
+ */
+
+export function useGetResource<
+  TData = Awaited<ReturnType<typeof getResource>>,
+  TError = ErrorType<void>,
+>(
+  id: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getResource>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetResourceQueryOptions(id, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
 
 /**
  * @summary Update a resource (admin only)
  */
-export const UpdateResourceParams = zod.object({
-  id: zod.coerce.number(),
-});
+export const getUpdateResourceUrl = (id: number) => {
+  return `/api/resources/${id}`;
+};
 
-export const UpdateResourceBody = zod.object({
-  title: zod.string().min(1),
-  description: zod.string().min(1),
-  category: zod.string().min(1),
-  url: zod.string().nullish(),
-  imageUrl: zod.string().nullish(),
-});
+export const updateResource = async (
+  id: number,
+  resourceInput: ResourceInput,
+  options?: RequestInit,
+): Promise<Resource> => {
+  return customFetch<Resource>(getUpdateResourceUrl(id), {
+    ...options,
+    method: "PATCH",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(resourceInput),
+  });
+};
 
-export const UpdateResourceResponse = zod.object({
-  id: zod.number(),
-  title: zod.string(),
-  description: zod.string(),
-  category: zod.string(),
-  url: zod.string().nullish(),
-  imageUrl: zod.string().nullish(),
-  createdAt: zod.coerce.date(),
-});
+export const getUpdateResourceMutationOptions = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateResource>>,
+    TError,
+    { id: number; data: BodyType<ResourceInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof updateResource>>,
+  TError,
+  { id: number; data: BodyType<ResourceInput> },
+  TContext
+> => {
+  const mutationKey = ["updateResource"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof updateResource>>,
+    { id: number; data: BodyType<ResourceInput> }
+  > = (props) => {
+    const { id, data } = props ?? {};
+
+    return updateResource(id, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type UpdateResourceMutationResult = NonNullable<
+  Awaited<ReturnType<typeof updateResource>>
+>;
+export type UpdateResourceMutationBody = BodyType<ResourceInput>;
+export type UpdateResourceMutationError = ErrorType<void>;
+
+/**
+ * @summary Update a resource (admin only)
+ */
+export const useUpdateResource = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateResource>>,
+    TError,
+    { id: number; data: BodyType<ResourceInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof updateResource>>,
+  TError,
+  { id: number; data: BodyType<ResourceInput> },
+  TContext
+> => {
+  return useMutation(getUpdateResourceMutationOptions(options));
+};
 
 /**
  * @summary Delete a resource (admin only)
  */
-export const DeleteResourceParams = zod.object({
-  id: zod.coerce.number(),
-});
+export const getDeleteResourceUrl = (id: number) => {
+  return `/api/resources/${id}`;
+};
+
+export const deleteResource = async (
+  id: number,
+  options?: RequestInit,
+): Promise<void> => {
+  return customFetch<void>(getDeleteResourceUrl(id), {
+    ...options,
+    method: "DELETE",
+  });
+};
+
+export const getDeleteResourceMutationOptions = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteResource>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof deleteResource>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  const mutationKey = ["deleteResource"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof deleteResource>>,
+    { id: number }
+  > = (props) => {
+    const { id } = props ?? {};
+
+    return deleteResource(id, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type DeleteResourceMutationResult = NonNullable<
+  Awaited<ReturnType<typeof deleteResource>>
+>;
+
+export type DeleteResourceMutationError = ErrorType<void>;
+
+/**
+ * @summary Delete a resource (admin only)
+ */
+export const useDeleteResource = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteResource>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof deleteResource>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  return useMutation(getDeleteResourceMutationOptions(options));
+};
 
 /**
  * @summary List all newspaper articles (newest first)
  */
-export const ListNewspaperArticlesResponseItem = zod.object({
-  id: zod.number(),
-  title: zod.string(),
-  excerpt: zod.string(),
-  content: zod.string(),
-  author: zod.string(),
-  coverImageUrl: zod.string().nullish(),
-  publishDate: zod.coerce.date(),
-  createdAt: zod.coerce.date(),
-});
-export const ListNewspaperArticlesResponse = zod.array(
-  ListNewspaperArticlesResponseItem,
-);
+export const getListNewspaperArticlesUrl = () => {
+  return `/api/newspaper`;
+};
+
+export const listNewspaperArticles = async (
+  options?: RequestInit,
+): Promise<NewspaperArticle[]> => {
+  return customFetch<NewspaperArticle[]>(getListNewspaperArticlesUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getListNewspaperArticlesQueryKey = () => {
+  return [`/api/newspaper`] as const;
+};
+
+export const getListNewspaperArticlesQueryOptions = <
+  TData = Awaited<ReturnType<typeof listNewspaperArticles>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listNewspaperArticles>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getListNewspaperArticlesQueryKey();
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof listNewspaperArticles>>
+  > = ({ signal }) => listNewspaperArticles({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof listNewspaperArticles>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ListNewspaperArticlesQueryResult = NonNullable<
+  Awaited<ReturnType<typeof listNewspaperArticles>>
+>;
+export type ListNewspaperArticlesQueryError = ErrorType<unknown>;
+
+/**
+ * @summary List all newspaper articles (newest first)
+ */
+
+export function useListNewspaperArticles<
+  TData = Awaited<ReturnType<typeof listNewspaperArticles>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listNewspaperArticles>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListNewspaperArticlesQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
 
 /**
  * @summary Create a newspaper article (admin only)
  */
+export const getCreateNewspaperArticleUrl = () => {
+  return `/api/newspaper`;
+};
 
-export const CreateNewspaperArticleBody = zod.object({
-  title: zod.string().min(1),
-  excerpt: zod.string().min(1),
-  content: zod.string().min(1),
-  author: zod.string().min(1),
-  coverImageUrl: zod.string().nullish(),
-  publishDate: zod.coerce.date(),
-});
+export const createNewspaperArticle = async (
+  newspaperArticleInput: NewspaperArticleInput,
+  options?: RequestInit,
+): Promise<NewspaperArticle> => {
+  return customFetch<NewspaperArticle>(getCreateNewspaperArticleUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(newspaperArticleInput),
+  });
+};
+
+export const getCreateNewspaperArticleMutationOptions = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createNewspaperArticle>>,
+    TError,
+    { data: BodyType<NewspaperArticleInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof createNewspaperArticle>>,
+  TError,
+  { data: BodyType<NewspaperArticleInput> },
+  TContext
+> => {
+  const mutationKey = ["createNewspaperArticle"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof createNewspaperArticle>>,
+    { data: BodyType<NewspaperArticleInput> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return createNewspaperArticle(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type CreateNewspaperArticleMutationResult = NonNullable<
+  Awaited<ReturnType<typeof createNewspaperArticle>>
+>;
+export type CreateNewspaperArticleMutationBody =
+  BodyType<NewspaperArticleInput>;
+export type CreateNewspaperArticleMutationError = ErrorType<void>;
+
+/**
+ * @summary Create a newspaper article (admin only)
+ */
+export const useCreateNewspaperArticle = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createNewspaperArticle>>,
+    TError,
+    { data: BodyType<NewspaperArticleInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof createNewspaperArticle>>,
+  TError,
+  { data: BodyType<NewspaperArticleInput> },
+  TContext
+> => {
+  return useMutation(getCreateNewspaperArticleMutationOptions(options));
+};
 
 /**
  * @summary Get a single newspaper article
  */
-export const GetNewspaperArticleParams = zod.object({
-  id: zod.coerce.number(),
-});
+export const getGetNewspaperArticleUrl = (id: number) => {
+  return `/api/newspaper/${id}`;
+};
 
-export const GetNewspaperArticleResponse = zod.object({
-  id: zod.number(),
-  title: zod.string(),
-  excerpt: zod.string(),
-  content: zod.string(),
-  author: zod.string(),
-  coverImageUrl: zod.string().nullish(),
-  publishDate: zod.coerce.date(),
-  createdAt: zod.coerce.date(),
-});
+export const getNewspaperArticle = async (
+  id: number,
+  options?: RequestInit,
+): Promise<NewspaperArticle> => {
+  return customFetch<NewspaperArticle>(getGetNewspaperArticleUrl(id), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetNewspaperArticleQueryKey = (id: number) => {
+  return [`/api/newspaper/${id}`] as const;
+};
+
+export const getGetNewspaperArticleQueryOptions = <
+  TData = Awaited<ReturnType<typeof getNewspaperArticle>>,
+  TError = ErrorType<void>,
+>(
+  id: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getNewspaperArticle>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetNewspaperArticleQueryKey(id);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof getNewspaperArticle>>
+  > = ({ signal }) => getNewspaperArticle(id, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!id,
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof getNewspaperArticle>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetNewspaperArticleQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getNewspaperArticle>>
+>;
+export type GetNewspaperArticleQueryError = ErrorType<void>;
+
+/**
+ * @summary Get a single newspaper article
+ */
+
+export function useGetNewspaperArticle<
+  TData = Awaited<ReturnType<typeof getNewspaperArticle>>,
+  TError = ErrorType<void>,
+>(
+  id: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getNewspaperArticle>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetNewspaperArticleQueryOptions(id, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
 
 /**
  * @summary Update an article (admin only)
  */
-export const UpdateNewspaperArticleParams = zod.object({
-  id: zod.coerce.number(),
-});
+export const getUpdateNewspaperArticleUrl = (id: number) => {
+  return `/api/newspaper/${id}`;
+};
 
-export const UpdateNewspaperArticleBody = zod.object({
-  title: zod.string().min(1),
-  excerpt: zod.string().min(1),
-  content: zod.string().min(1),
-  author: zod.string().min(1),
-  coverImageUrl: zod.string().nullish(),
-  publishDate: zod.coerce.date(),
-});
+export const updateNewspaperArticle = async (
+  id: number,
+  newspaperArticleInput: NewspaperArticleInput,
+  options?: RequestInit,
+): Promise<NewspaperArticle> => {
+  return customFetch<NewspaperArticle>(getUpdateNewspaperArticleUrl(id), {
+    ...options,
+    method: "PATCH",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(newspaperArticleInput),
+  });
+};
 
-export const UpdateNewspaperArticleResponse = zod.object({
-  id: zod.number(),
-  title: zod.string(),
-  excerpt: zod.string(),
-  content: zod.string(),
-  author: zod.string(),
-  coverImageUrl: zod.string().nullish(),
-  publishDate: zod.coerce.date(),
-  createdAt: zod.coerce.date(),
-});
+export const getUpdateNewspaperArticleMutationOptions = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateNewspaperArticle>>,
+    TError,
+    { id: number; data: BodyType<NewspaperArticleInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof updateNewspaperArticle>>,
+  TError,
+  { id: number; data: BodyType<NewspaperArticleInput> },
+  TContext
+> => {
+  const mutationKey = ["updateNewspaperArticle"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof updateNewspaperArticle>>,
+    { id: number; data: BodyType<NewspaperArticleInput> }
+  > = (props) => {
+    const { id, data } = props ?? {};
+
+    return updateNewspaperArticle(id, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type UpdateNewspaperArticleMutationResult = NonNullable<
+  Awaited<ReturnType<typeof updateNewspaperArticle>>
+>;
+export type UpdateNewspaperArticleMutationBody =
+  BodyType<NewspaperArticleInput>;
+export type UpdateNewspaperArticleMutationError = ErrorType<void>;
+
+/**
+ * @summary Update an article (admin only)
+ */
+export const useUpdateNewspaperArticle = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateNewspaperArticle>>,
+    TError,
+    { id: number; data: BodyType<NewspaperArticleInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof updateNewspaperArticle>>,
+  TError,
+  { id: number; data: BodyType<NewspaperArticleInput> },
+  TContext
+> => {
+  return useMutation(getUpdateNewspaperArticleMutationOptions(options));
+};
 
 /**
  * @summary Delete an article (admin only)
  */
-export const DeleteNewspaperArticleParams = zod.object({
-  id: zod.coerce.number(),
-});
+export const getDeleteNewspaperArticleUrl = (id: number) => {
+  return `/api/newspaper/${id}`;
+};
+
+export const deleteNewspaperArticle = async (
+  id: number,
+  options?: RequestInit,
+): Promise<void> => {
+  return customFetch<void>(getDeleteNewspaperArticleUrl(id), {
+    ...options,
+    method: "DELETE",
+  });
+};
+
+export const getDeleteNewspaperArticleMutationOptions = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteNewspaperArticle>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof deleteNewspaperArticle>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  const mutationKey = ["deleteNewspaperArticle"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof deleteNewspaperArticle>>,
+    { id: number }
+  > = (props) => {
+    const { id } = props ?? {};
+
+    return deleteNewspaperArticle(id, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type DeleteNewspaperArticleMutationResult = NonNullable<
+  Awaited<ReturnType<typeof deleteNewspaperArticle>>
+>;
+
+export type DeleteNewspaperArticleMutationError = ErrorType<void>;
+
+/**
+ * @summary Delete an article (admin only)
+ */
+export const useDeleteNewspaperArticle = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteNewspaperArticle>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof deleteNewspaperArticle>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  return useMutation(getDeleteNewspaperArticleMutationOptions(options));
+};
 
 /**
  * @summary List all school activities (newest first)
  */
-export const ListActivitiesResponseItem = zod.object({
-  id: zod.number(),
-  title: zod.string(),
-  description: zod.string(),
-  date: zod.coerce.date(),
-  location: zod.string().nullish(),
-  imageUrl: zod.string().nullish(),
-  createdAt: zod.coerce.date(),
-});
-export const ListActivitiesResponse = zod.array(ListActivitiesResponseItem);
+export const getListActivitiesUrl = () => {
+  return `/api/activities`;
+};
+
+export const listActivities = async (
+  options?: RequestInit,
+): Promise<Activity[]> => {
+  return customFetch<Activity[]>(getListActivitiesUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getListActivitiesQueryKey = () => {
+  return [`/api/activities`] as const;
+};
+
+export const getListActivitiesQueryOptions = <
+  TData = Awaited<ReturnType<typeof listActivities>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listActivities>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getListActivitiesQueryKey();
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof listActivities>>> = ({
+    signal,
+  }) => listActivities({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof listActivities>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ListActivitiesQueryResult = NonNullable<
+  Awaited<ReturnType<typeof listActivities>>
+>;
+export type ListActivitiesQueryError = ErrorType<unknown>;
+
+/**
+ * @summary List all school activities (newest first)
+ */
+
+export function useListActivities<
+  TData = Awaited<ReturnType<typeof listActivities>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listActivities>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListActivitiesQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
 
 /**
  * @summary Create an activity (admin only)
  */
+export const getCreateActivityUrl = () => {
+  return `/api/activities`;
+};
 
-export const CreateActivityBody = zod.object({
-  title: zod.string().min(1),
-  description: zod.string().min(1),
-  date: zod.coerce.date(),
-  location: zod.string().nullish(),
-  imageUrl: zod.string().nullish(),
-});
+export const createActivity = async (
+  activityInput: ActivityInput,
+  options?: RequestInit,
+): Promise<Activity> => {
+  return customFetch<Activity>(getCreateActivityUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(activityInput),
+  });
+};
+
+export const getCreateActivityMutationOptions = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createActivity>>,
+    TError,
+    { data: BodyType<ActivityInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof createActivity>>,
+  TError,
+  { data: BodyType<ActivityInput> },
+  TContext
+> => {
+  const mutationKey = ["createActivity"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof createActivity>>,
+    { data: BodyType<ActivityInput> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return createActivity(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type CreateActivityMutationResult = NonNullable<
+  Awaited<ReturnType<typeof createActivity>>
+>;
+export type CreateActivityMutationBody = BodyType<ActivityInput>;
+export type CreateActivityMutationError = ErrorType<void>;
+
+/**
+ * @summary Create an activity (admin only)
+ */
+export const useCreateActivity = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createActivity>>,
+    TError,
+    { data: BodyType<ActivityInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof createActivity>>,
+  TError,
+  { data: BodyType<ActivityInput> },
+  TContext
+> => {
+  return useMutation(getCreateActivityMutationOptions(options));
+};
 
 /**
  * @summary List upcoming activities (date >= today)
  */
-export const ListUpcomingActivitiesResponseItem = zod.object({
-  id: zod.number(),
-  title: zod.string(),
-  description: zod.string(),
-  date: zod.coerce.date(),
-  location: zod.string().nullish(),
-  imageUrl: zod.string().nullish(),
-  createdAt: zod.coerce.date(),
-});
-export const ListUpcomingActivitiesResponse = zod.array(
-  ListUpcomingActivitiesResponseItem,
-);
+export const getListUpcomingActivitiesUrl = () => {
+  return `/api/activities/upcoming`;
+};
+
+export const listUpcomingActivities = async (
+  options?: RequestInit,
+): Promise<Activity[]> => {
+  return customFetch<Activity[]>(getListUpcomingActivitiesUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getListUpcomingActivitiesQueryKey = () => {
+  return [`/api/activities/upcoming`] as const;
+};
+
+export const getListUpcomingActivitiesQueryOptions = <
+  TData = Awaited<ReturnType<typeof listUpcomingActivities>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listUpcomingActivities>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getListUpcomingActivitiesQueryKey();
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof listUpcomingActivities>>
+  > = ({ signal }) => listUpcomingActivities({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof listUpcomingActivities>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ListUpcomingActivitiesQueryResult = NonNullable<
+  Awaited<ReturnType<typeof listUpcomingActivities>>
+>;
+export type ListUpcomingActivitiesQueryError = ErrorType<unknown>;
+
+/**
+ * @summary List upcoming activities (date >= today)
+ */
+
+export function useListUpcomingActivities<
+  TData = Awaited<ReturnType<typeof listUpcomingActivities>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listUpcomingActivities>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListUpcomingActivitiesQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
 
 /**
  * @summary Get a single activity
  */
-export const GetActivityParams = zod.object({
-  id: zod.coerce.number(),
-});
+export const getGetActivityUrl = (id: number) => {
+  return `/api/activities/${id}`;
+};
 
-export const GetActivityResponse = zod.object({
-  id: zod.number(),
-  title: zod.string(),
-  description: zod.string(),
-  date: zod.coerce.date(),
-  location: zod.string().nullish(),
-  imageUrl: zod.string().nullish(),
-  createdAt: zod.coerce.date(),
-});
+export const getActivity = async (
+  id: number,
+  options?: RequestInit,
+): Promise<Activity> => {
+  return customFetch<Activity>(getGetActivityUrl(id), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetActivityQueryKey = (id: number) => {
+  return [`/api/activities/${id}`] as const;
+};
+
+export const getGetActivityQueryOptions = <
+  TData = Awaited<ReturnType<typeof getActivity>>,
+  TError = ErrorType<void>,
+>(
+  id: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getActivity>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetActivityQueryKey(id);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getActivity>>> = ({
+    signal,
+  }) => getActivity(id, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!id,
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof getActivity>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetActivityQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getActivity>>
+>;
+export type GetActivityQueryError = ErrorType<void>;
+
+/**
+ * @summary Get a single activity
+ */
+
+export function useGetActivity<
+  TData = Awaited<ReturnType<typeof getActivity>>,
+  TError = ErrorType<void>,
+>(
+  id: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getActivity>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetActivityQueryOptions(id, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
 
 /**
  * @summary Update an activity (admin only)
  */
-export const UpdateActivityParams = zod.object({
-  id: zod.coerce.number(),
-});
+export const getUpdateActivityUrl = (id: number) => {
+  return `/api/activities/${id}`;
+};
 
-export const UpdateActivityBody = zod.object({
-  title: zod.string().min(1),
-  description: zod.string().min(1),
-  date: zod.coerce.date(),
-  location: zod.string().nullish(),
-  imageUrl: zod.string().nullish(),
-});
+export const updateActivity = async (
+  id: number,
+  activityInput: ActivityInput,
+  options?: RequestInit,
+): Promise<Activity> => {
+  return customFetch<Activity>(getUpdateActivityUrl(id), {
+    ...options,
+    method: "PATCH",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(activityInput),
+  });
+};
 
-export const UpdateActivityResponse = zod.object({
-  id: zod.number(),
-  title: zod.string(),
-  description: zod.string(),
-  date: zod.coerce.date(),
-  location: zod.string().nullish(),
-  imageUrl: zod.string().nullish(),
-  createdAt: zod.coerce.date(),
-});
+export const getUpdateActivityMutationOptions = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateActivity>>,
+    TError,
+    { id: number; data: BodyType<ActivityInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof updateActivity>>,
+  TError,
+  { id: number; data: BodyType<ActivityInput> },
+  TContext
+> => {
+  const mutationKey = ["updateActivity"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof updateActivity>>,
+    { id: number; data: BodyType<ActivityInput> }
+  > = (props) => {
+    const { id, data } = props ?? {};
+
+    return updateActivity(id, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type UpdateActivityMutationResult = NonNullable<
+  Awaited<ReturnType<typeof updateActivity>>
+>;
+export type UpdateActivityMutationBody = BodyType<ActivityInput>;
+export type UpdateActivityMutationError = ErrorType<void>;
+
+/**
+ * @summary Update an activity (admin only)
+ */
+export const useUpdateActivity = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateActivity>>,
+    TError,
+    { id: number; data: BodyType<ActivityInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof updateActivity>>,
+  TError,
+  { id: number; data: BodyType<ActivityInput> },
+  TContext
+> => {
+  return useMutation(getUpdateActivityMutationOptions(options));
+};
 
 /**
  * @summary Delete an activity (admin only)
  */
-export const DeleteActivityParams = zod.object({
-  id: zod.coerce.number(),
-});
+export const getDeleteActivityUrl = (id: number) => {
+  return `/api/activities/${id}`;
+};
+
+export const deleteActivity = async (
+  id: number,
+  options?: RequestInit,
+): Promise<void> => {
+  return customFetch<void>(getDeleteActivityUrl(id), {
+    ...options,
+    method: "DELETE",
+  });
+};
+
+export const getDeleteActivityMutationOptions = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteActivity>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof deleteActivity>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  const mutationKey = ["deleteActivity"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof deleteActivity>>,
+    { id: number }
+  > = (props) => {
+    const { id } = props ?? {};
+
+    return deleteActivity(id, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type DeleteActivityMutationResult = NonNullable<
+  Awaited<ReturnType<typeof deleteActivity>>
+>;
+
+export type DeleteActivityMutationError = ErrorType<void>;
+
+/**
+ * @summary Delete an activity (admin only)
+ */
+export const useDeleteActivity = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteActivity>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof deleteActivity>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  return useMutation(getDeleteActivityMutationOptions(options));
+};
 
 /**
  * @summary Get about-school content (singleton)
  */
-export const GetAboutResponse = zod.object({
-  id: zod.number(),
-  schoolName: zod.string(),
-  tagline: zod.string(),
-  history: zod.string(),
-  mission: zod.string(),
-  vision: zod.string(),
-  principalName: zod.string(),
-  principalMessage: zod.string(),
-  contactEmail: zod.string(),
-  contactPhone: zod.string(),
-  address: zod.string(),
-  heroImageUrl: zod.string().nullish(),
-  updatedAt: zod.coerce.date(),
-});
+export const getGetAboutUrl = () => {
+  return `/api/about`;
+};
+
+export const getAbout = async (
+  options?: RequestInit,
+): Promise<AboutContent> => {
+  return customFetch<AboutContent>(getGetAboutUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetAboutQueryKey = () => {
+  return [`/api/about`] as const;
+};
+
+export const getGetAboutQueryOptions = <
+  TData = Awaited<ReturnType<typeof getAbout>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<Awaited<ReturnType<typeof getAbout>>, TError, TData>;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetAboutQueryKey();
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getAbout>>> = ({
+    signal,
+  }) => getAbout({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getAbout>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetAboutQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getAbout>>
+>;
+export type GetAboutQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Get about-school content (singleton)
+ */
+
+export function useGetAbout<
+  TData = Awaited<ReturnType<typeof getAbout>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<Awaited<ReturnType<typeof getAbout>>, TError, TData>;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetAboutQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
 
 /**
  * @summary Update about-school content (admin only)
  */
+export const getUpdateAboutUrl = () => {
+  return `/api/about`;
+};
 
-export const UpdateAboutBody = zod.object({
-  schoolName: zod.string().min(1),
-  tagline: zod.string().min(1),
-  history: zod.string().min(1),
-  mission: zod.string().min(1),
-  vision: zod.string().min(1),
-  principalName: zod.string().min(1),
-  principalMessage: zod.string().min(1),
-  contactEmail: zod.string(),
-  contactPhone: zod.string(),
-  address: zod.string(),
-  heroImageUrl: zod.string().nullish(),
-});
+export const updateAbout = async (
+  aboutContentInput: AboutContentInput,
+  options?: RequestInit,
+): Promise<AboutContent> => {
+  return customFetch<AboutContent>(getUpdateAboutUrl(), {
+    ...options,
+    method: "PUT",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(aboutContentInput),
+  });
+};
 
-export const UpdateAboutResponse = zod.object({
-  id: zod.number(),
-  schoolName: zod.string(),
-  tagline: zod.string(),
-  history: zod.string(),
-  mission: zod.string(),
-  vision: zod.string(),
-  principalName: zod.string(),
-  principalMessage: zod.string(),
-  contactEmail: zod.string(),
-  contactPhone: zod.string(),
-  address: zod.string(),
-  heroImageUrl: zod.string().nullish(),
-  updatedAt: zod.coerce.date(),
-});
+export const getUpdateAboutMutationOptions = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateAbout>>,
+    TError,
+    { data: BodyType<AboutContentInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof updateAbout>>,
+  TError,
+  { data: BodyType<AboutContentInput> },
+  TContext
+> => {
+  const mutationKey = ["updateAbout"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof updateAbout>>,
+    { data: BodyType<AboutContentInput> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return updateAbout(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type UpdateAboutMutationResult = NonNullable<
+  Awaited<ReturnType<typeof updateAbout>>
+>;
+export type UpdateAboutMutationBody = BodyType<AboutContentInput>;
+export type UpdateAboutMutationError = ErrorType<void>;
+
+/**
+ * @summary Update about-school content (admin only)
+ */
+export const useUpdateAbout = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateAbout>>,
+    TError,
+    { data: BodyType<AboutContentInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof updateAbout>>,
+  TError,
+  { data: BodyType<AboutContentInput> },
+  TContext
+> => {
+  return useMutation(getUpdateAboutMutationOptions(options));
+};
