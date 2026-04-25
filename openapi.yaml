@@ -1,0 +1,689 @@
+openapi: 3.1.0
+info:
+  # Do not change the title, if the title changes, the import paths will be broken
+  title: Api
+  version: 0.1.0
+  description: School website API
+servers:
+  - url: /api
+    description: Base API path
+tags:
+  - name: health
+    description: Health operations
+  - name: me
+    description: Current user info
+  - name: resources
+    description: Educational resources
+  - name: newspaper
+    description: School newspaper articles
+  - name: activities
+    description: School activities
+  - name: about
+    description: About school content
+  - name: stats
+    description: Dashboard statistics
+
+paths:
+  /healthz:
+    get:
+      operationId: healthCheck
+      tags: [health]
+      summary: Health check
+      responses:
+        "200":
+          description: Healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthStatus"
+
+  /me:
+    get:
+      operationId: getMe
+      tags: [me]
+      summary: Get current user info and role
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MeInfo"
+        "401":
+          description: Unauthorized
+
+  /stats:
+    get:
+      operationId: getStats
+      tags: [stats]
+      summary: Get website summary stats
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SiteStats"
+
+  /recent-activity:
+    get:
+      operationId: getRecentActivity
+      tags: [stats]
+      summary: Get the most recent items across the site
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/RecentItem"
+
+  /resources:
+    get:
+      operationId: listResources
+      tags: [resources]
+      summary: List all educational resources
+      parameters:
+        - name: category
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Resource"
+    post:
+      operationId: createResource
+      tags: [resources]
+      summary: Create a new resource (admin only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ResourceInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Resource"
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden (not admin)
+
+  /resources/categories:
+    get:
+      operationId: listResourceCategories
+      tags: [resources]
+      summary: List distinct resource categories with counts
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/CategoryCount"
+
+  /resources/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+    get:
+      operationId: getResource
+      tags: [resources]
+      summary: Get a single resource
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Resource"
+        "404":
+          description: Not Found
+    patch:
+      operationId: updateResource
+      tags: [resources]
+      summary: Update a resource (admin only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ResourceInput"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Resource"
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+        "404":
+          description: Not Found
+    delete:
+      operationId: deleteResource
+      tags: [resources]
+      summary: Delete a resource (admin only)
+      responses:
+        "204":
+          description: Deleted
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+
+  /newspaper:
+    get:
+      operationId: listNewspaperArticles
+      tags: [newspaper]
+      summary: List all newspaper articles (newest first)
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/NewspaperArticle"
+    post:
+      operationId: createNewspaperArticle
+      tags: [newspaper]
+      summary: Create a newspaper article (admin only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NewspaperArticleInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NewspaperArticle"
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+
+  /newspaper/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+    get:
+      operationId: getNewspaperArticle
+      tags: [newspaper]
+      summary: Get a single newspaper article
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NewspaperArticle"
+        "404":
+          description: Not Found
+    patch:
+      operationId: updateNewspaperArticle
+      tags: [newspaper]
+      summary: Update an article (admin only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NewspaperArticleInput"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NewspaperArticle"
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+        "404":
+          description: Not Found
+    delete:
+      operationId: deleteNewspaperArticle
+      tags: [newspaper]
+      summary: Delete an article (admin only)
+      responses:
+        "204":
+          description: Deleted
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+
+  /activities:
+    get:
+      operationId: listActivities
+      tags: [activities]
+      summary: List all school activities (newest first)
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Activity"
+    post:
+      operationId: createActivity
+      tags: [activities]
+      summary: Create an activity (admin only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ActivityInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Activity"
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+
+  /activities/upcoming:
+    get:
+      operationId: listUpcomingActivities
+      tags: [activities]
+      summary: List upcoming activities (date >= today)
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Activity"
+
+  /activities/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+    get:
+      operationId: getActivity
+      tags: [activities]
+      summary: Get a single activity
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Activity"
+        "404":
+          description: Not Found
+    patch:
+      operationId: updateActivity
+      tags: [activities]
+      summary: Update an activity (admin only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ActivityInput"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Activity"
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+        "404":
+          description: Not Found
+    delete:
+      operationId: deleteActivity
+      tags: [activities]
+      summary: Delete an activity (admin only)
+      responses:
+        "204":
+          description: Deleted
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+
+  /about:
+    get:
+      operationId: getAbout
+      tags: [about]
+      summary: Get about-school content (singleton)
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AboutContent"
+    put:
+      operationId: updateAbout
+      tags: [about]
+      summary: Update about-school content (admin only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AboutContentInput"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AboutContent"
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+
+components:
+  schemas:
+    HealthStatus:
+      type: object
+      properties:
+        status:
+          type: string
+      required: [status]
+
+    MeInfo:
+      type: object
+      properties:
+        userId:
+          type: string
+        role:
+          type: string
+          enum: [admin, user]
+        firstName:
+          type: string
+          nullable: true
+        lastName:
+          type: string
+          nullable: true
+        imageUrl:
+          type: string
+          nullable: true
+      required: [userId, role]
+
+    SiteStats:
+      type: object
+      properties:
+        resourceCount:
+          type: integer
+        articleCount:
+          type: integer
+        activityCount:
+          type: integer
+        upcomingActivityCount:
+          type: integer
+      required: [resourceCount, articleCount, activityCount, upcomingActivityCount]
+
+    RecentItem:
+      type: object
+      properties:
+        id:
+          type: integer
+        kind:
+          type: string
+          enum: [resource, article, activity]
+        title:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+      required: [id, kind, title, createdAt]
+
+    CategoryCount:
+      type: object
+      properties:
+        category:
+          type: string
+        count:
+          type: integer
+      required: [category, count]
+
+    Resource:
+      type: object
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        description:
+          type: string
+        category:
+          type: string
+        url:
+          type: string
+          nullable: true
+        imageUrl:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+      required: [id, title, description, category, createdAt]
+
+    ResourceInput:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 1
+        description:
+          type: string
+          minLength: 1
+        category:
+          type: string
+          minLength: 1
+        url:
+          type: string
+          nullable: true
+        imageUrl:
+          type: string
+          nullable: true
+      required: [title, description, category]
+
+    NewspaperArticle:
+      type: object
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        excerpt:
+          type: string
+        content:
+          type: string
+        author:
+          type: string
+        coverImageUrl:
+          type: string
+          nullable: true
+        publishDate:
+          type: string
+          format: date
+        createdAt:
+          type: string
+          format: date-time
+      required: [id, title, excerpt, content, author, publishDate, createdAt]
+
+    NewspaperArticleInput:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 1
+        excerpt:
+          type: string
+          minLength: 1
+        content:
+          type: string
+          minLength: 1
+        author:
+          type: string
+          minLength: 1
+        coverImageUrl:
+          type: string
+          nullable: true
+        publishDate:
+          type: string
+          format: date
+      required: [title, excerpt, content, author, publishDate]
+
+    Activity:
+      type: object
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        description:
+          type: string
+        date:
+          type: string
+          format: date
+        location:
+          type: string
+          nullable: true
+        imageUrl:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+      required: [id, title, description, date, createdAt]
+
+    ActivityInput:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 1
+        description:
+          type: string
+          minLength: 1
+        date:
+          type: string
+          format: date
+        location:
+          type: string
+          nullable: true
+        imageUrl:
+          type: string
+          nullable: true
+      required: [title, description, date]
+
+    AboutContent:
+      type: object
+      properties:
+        id:
+          type: integer
+        schoolName:
+          type: string
+        tagline:
+          type: string
+        history:
+          type: string
+        mission:
+          type: string
+        vision:
+          type: string
+        principalName:
+          type: string
+        principalMessage:
+          type: string
+        contactEmail:
+          type: string
+        contactPhone:
+          type: string
+        address:
+          type: string
+        heroImageUrl:
+          type: string
+          nullable: true
+        updatedAt:
+          type: string
+          format: date-time
+      required: [id, schoolName, tagline, history, mission, vision, principalName, principalMessage, contactEmail, contactPhone, address, updatedAt]
+
+    AboutContentInput:
+      type: object
+      properties:
+        schoolName:
+          type: string
+          minLength: 1
+        tagline:
+          type: string
+          minLength: 1
+        history:
+          type: string
+          minLength: 1
+        mission:
+          type: string
+          minLength: 1
+        vision:
+          type: string
+          minLength: 1
+        principalName:
+          type: string
+          minLength: 1
+        principalMessage:
+          type: string
+          minLength: 1
+        contactEmail:
+          type: string
+        contactPhone:
+          type: string
+        address:
+          type: string
+        heroImageUrl:
+          type: string
+          nullable: true
+      required: [schoolName, tagline, history, mission, vision, principalName, principalMessage, contactEmail, contactPhone, address]
